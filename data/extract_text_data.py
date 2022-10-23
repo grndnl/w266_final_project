@@ -80,7 +80,7 @@ def build_string_table(file, output):
         json.dump(string_table, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
 
-def process_assembly_text(metadata_path):
+def process_assembly_text(metadata_path, output_raw):
     """
     Read the metadata file, and map it to the JSON with the part names. Export one data file with `assembly_id`,
     `assembly_name`, `and assembly_part_names`.
@@ -92,8 +92,7 @@ def process_assembly_text(metadata_path):
     metadata = metadata.set_index('assembly_id')
 
     # Read JSON of part names
-    # with open("abc_text_data.json") as f:
-    with open("abc_text_data_2.json") as f:
+    with open(output_raw) as f:
         part_names = json.load(f)
 
     # Map assembly names and copy of list of part names
@@ -121,11 +120,11 @@ def save_data(data, name):
 
 if __name__ == "__main__":
     all_name_lines = Path("all_name_lines.txt")
-    output_raw = Path("abc_text_data_2.json")
+    output_raw = Path("abc_text_data.json")
     metadata_path = "meta.csv"
     output_processed = "data"
 
     build_string_table(all_name_lines, output_raw)
 
-    metadata = process_assembly_text(metadata_path)
+    metadata = process_assembly_text(metadata_path, output_raw)
     save_data(metadata, output_processed)
