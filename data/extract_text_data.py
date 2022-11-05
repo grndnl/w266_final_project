@@ -47,7 +47,7 @@ def filter_useful_strings(text_strings):
         if len(bad) == 0 or len(ltokens) > 2:
             filtered_strings.append(s)
 
-    return set(filtered_strings)
+    return filtered_strings
 
 
 def is_brep(line):
@@ -69,8 +69,8 @@ def build_string_table(file, output):
             if len(useful_strings) > 0:
                 file_name = find_file(line)
                 if not file_name in string_table:
-                    string_table[file_name] = set()
-                string_table[file_name] = string_table[file_name].union(set(useful_strings))
+                    string_table[file_name] = []
+                string_table[file_name].extend(useful_strings)
 
     keys = [k for k in string_table]
     for key in tqdm(keys, desc="processing keys"):
@@ -120,9 +120,9 @@ def save_data(data, name):
 
 if __name__ == "__main__":
     all_name_lines = Path("all_name_lines.txt")
-    output_raw = Path("abc_text_data.json")
+    output_raw = Path("abc_text_data_003.json")
     metadata_path = "meta.csv"
-    output_processed = "data"
+    output_processed = "data_02"
 
     build_string_table(all_name_lines, output_raw)
 
