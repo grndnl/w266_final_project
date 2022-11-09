@@ -54,7 +54,6 @@ from transformers import (
     create_optimizer,
     set_seed,
 )
-from transformers.utils import send_example_telemetry
 from transformers.utils.versions import require_version
 
 
@@ -225,10 +224,6 @@ def main():
         model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
-    # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
-    # information sent is the one passed as arguments along with your Python/PyTorch versions.
-    send_example_telemetry("run_mlm", model_args, data_args, framework="tensorflow")
 
     # Sanity checks
     if data_args.dataset_name is None and data_args.train_file is None and data_args.validation_file is None:
@@ -513,21 +508,36 @@ def main():
         # https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.TFPreTrainedModel.prepare_tf_dataset
         # https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.Dataset.to_tf_dataset
 
-        tf_train_dataset = model.prepare_tf_dataset(
-            train_dataset,
-            shuffle=True,
-            batch_size=num_replicas * training_args.per_device_train_batch_size,
-            collate_fn=data_collator,
-        ).with_options(options)
+#         tf_train_dataset = model.prepare_tf_dataset(
+#             train_dataset,
+#             shuffle=True,
+#             batch_size=num_replicas * training_args.per_device_train_batch_size,
+#             collate_fn=data_collator,
+#         ).with_options(options)
 
-        tf_eval_dataset = model.prepare_tf_dataset(
-            eval_dataset,
-            # labels are passed as input, as we will use the model's internal loss
-            shuffle=False,
-            batch_size=num_replicas * training_args.per_device_eval_batch_size,
-            collate_fn=data_collator,
-            drop_remainder=True,
-        ).with_options(options)
+        tf_train_dataset = train_dataset.to_tf_dataset(
+           columns=['input_ids', 'token_type_ids', 'attention_mask'],
+           shuffle=True,
+           batch_size=num_replicas * training_args.per_device_train_batch_size,
+           collate_fn=data_collator,
+            )
+
+#         tf_eval_dataset = model.prepare_tf_dataset(
+#             eval_dataset,
+#             # labels are passed as input, as we will use the model's internal loss
+#             shuffle=False,
+#             batch_size=num_replicas * training_args.per_device_eval_batch_size,
+#             collate_fn=data_collator,
+#             drop_remainder=True,
+#         ).with_options(options)
+         
+        tf_eval_dataset = eval_dataset.to_tf_dataset(
+           columns=['input_ids', 'token_type_ids', 'attention_mask'],
+           shuffle=False,
+           batch_size=num_replicas * training_args.per_device_eval_batch_size,
+           collate_fn=data_collator,
+           drop_remainder=True
+            )
         # endregion
 
         # region Optimizer and loss
@@ -548,11 +558,12 @@ def main():
             adam_beta2=training_args.adam_beta2,
             adam_epsilon=training_args.adam_epsilon,
             weight_decay_rate=training_args.weight_decay,
-            adam_global_clipnorm=training_args.max_grad_norm,
+#             adam_global_clipnorm=training_args.max_grad_norm,
         )
 
         # no user-specified loss = will use the model internal loss
-        model.compile(optimizer=optimizer, jit_compile=training_args.xla, run_eagerly=True)
+#         model.compile(optimizer=optimizer, jit_compile=training_args.xla, run_eagerly=True)
+        model.compile(optimizer=optimizer, run_eagerly=True)
         # endregion
 
         # region Preparing push_to_hub and model card
@@ -589,11 +600,11 @@ def main():
         # endregion
 
         # region Training and validation
-        logger.info("***** Running training *****")
-        logger.info(f"  Num examples = {len(train_dataset)}")
-        logger.info(f"  Num Epochs = {training_args.num_train_epochs}")
-        logger.info(f"  Instantaneous batch size per device = {training_args.per_device_train_batch_size}")
-        logger.info(f"  Total train batch size = {training_args.per_device_train_batch_size * num_replicas}")
+        print("***** Running training *****")
+        print(f"  Num examples = {len(train_dataset)}")
+        print(f"  Num Epochs = {training_args.num_train_epochs}")
+        print(f"  Instantaneous batch size per device = {training_args.per_device_train_batch_size}")
+        print(f"  Total train batch size = {training_args.per_device_train_batch_size * num_replicas}")
 
         # For long training runs, you may wish to use the PushToHub() callback here to save intermediate checkpoints
         # to the Hugging Face Hub rather than just pushing the finished model.
@@ -610,24 +621,25 @@ def main():
             train_perplexity = math.exp(train_loss)
         except OverflowError:
             train_perplexity = math.inf
-        logger.info(f"  Final train loss: {train_loss:.3f}")
-        logger.info(f"  Final train perplexity: {train_perplexity:.3f}")
-
-    validation_loss = history.history["val_loss"][-1]
-    try:
-        validation_perplexity = math.exp(validation_loss)
-    except OverflowError:
-        validation_perplexity = math.inf
-    logger.info(f"  Final validation loss: {validation_loss:.3f}")
-    logger.info(f"  Final validation perplexity: {validation_perplexity:.3f}")
+        print(f"  Final train loss: {train_loss:.3f}")
+        print(f"  Final train perplexity: {train_perplexity:.3f}")
+    
+#     print(history.history)
+#     validation_loss = history.history["val_loss"][-1]
+#     try:
+#         validation_perplexity = math.exp(validation_loss)
+#     except OverflowError:
+#         validation_perplexity = math.inf
+#     logger.info(f"  Final validation loss: {validation_loss:.3f}")
+#     logger.info(f"  Final validation perplexity: {validation_perplexity:.3f}")
 
     if training_args.output_dir is not None:
         output_eval_file = os.path.join(training_args.output_dir, "all_results.json")
         results_dict = dict()
         results_dict["train_loss"] = train_loss
         results_dict["train_perplexity"] = train_perplexity
-        results_dict["eval_loss"] = validation_loss
-        results_dict["eval_perplexity"] = validation_perplexity
+#         results_dict["eval_loss"] = validation_loss
+#         results_dict["eval_perplexity"] = validation_perplexity
         with open(output_eval_file, "w") as writer:
             writer.write(json.dumps(results_dict))
         # endregion
@@ -636,7 +648,8 @@ def main():
         # If we're not pushing to hub, at least save a local copy when we're done
         model.save_pretrained(training_args.output_dir)
 
-
+    print("Fucking Done")
+    
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     main()
