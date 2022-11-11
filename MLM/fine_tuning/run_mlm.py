@@ -530,7 +530,7 @@ def main():
 #             collate_fn=data_collator,
 #             drop_remainder=True,
 #         ).with_options(options)
-         
+
         tf_eval_dataset = eval_dataset.to_tf_dataset(
            columns=['input_ids', 'token_type_ids', 'attention_mask'],
            shuffle=False,
@@ -623,7 +623,7 @@ def main():
             train_perplexity = math.inf
         print(f"  Final train loss: {train_loss:.3f}")
         print(f"  Final train perplexity: {train_perplexity:.3f}")
-    
+
 #     print(history.history)
 #     validation_loss = history.history["val_loss"][-1]
 #     try:
@@ -648,8 +648,8 @@ def main():
         # If we're not pushing to hub, at least save a local copy when we're done
         model.save_pretrained(training_args.output_dir)
 
-    print("Fucking Done")
-    
+    print("Done")
+
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     main()
