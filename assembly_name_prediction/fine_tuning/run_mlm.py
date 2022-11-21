@@ -56,7 +56,6 @@ from transformers import (
 )
 from transformers.utils.versions import require_version
 
-
 logger = logging.getLogger(__name__)
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/tensorflow/language-modeling/requirements.txt")
 MODEL_CONFIG_CLASSES = list(TF_MODEL_FOR_MASKED_LM_MAPPING.keys())
@@ -399,59 +398,14 @@ def main():
             desc="Running tokenizer on dataset line_by_line",
         )
     else:
-        # Otherwise, we tokenize every text, then concatenate them together before splitting them in smaller parts.
-        # We use `return_special_tokens_mask=True` because DataCollatorForLanguageModeling (see below) is more
-        # efficient when it receives the `special_tokens_mask`.
-        def tokenize_function(examples):
-            return tokenizer(examples[text_column_name], return_special_tokens_mask=True)
-
-        tokenized_datasets = raw_datasets.map(
-            tokenize_function,
-            batched=True,
-            num_proc=data_args.preprocessing_num_workers,
-            remove_columns=column_names,
-            load_from_cache_file=not data_args.overwrite_cache,
-            desc="Running tokenizer on every text in dataset",
-        )
-
-        # Main data processing function that will concatenate all texts from our dataset and generate chunks of
-        # max_seq_length.
-        def group_texts(examples):
-            # Concatenate all texts.
-            concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
-            total_length = len(concatenated_examples[list(examples.keys())[0]])
-            # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
-            # customize this part to your needs.
-            if total_length >= max_seq_length:
-                total_length = (total_length // max_seq_length) * max_seq_length
-            # Split by chunks of max_len.
-            result = {
-                k: [t[i : i + max_seq_length] for i in range(0, total_length, max_seq_length)]
-                for k, t in concatenated_examples.items()
-            }
-            return result
-
-        # Note that with `batched=True`, this map processes 1,000 texts together, so group_texts throws away a
-        # remainder for each of those groups of 1,000 texts. You can adjust that batch_size here but a higher value
-        # might be slower to preprocess.
-        #
-        # To speed up this part, we use multiprocessing. See the documentation of the map method for more information:
-        # https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasets.Dataset.map
-
-        tokenized_datasets = tokenized_datasets.map(
-            group_texts,
-            batched=True,
-            num_proc=data_args.preprocessing_num_workers,
-            load_from_cache_file=not data_args.overwrite_cache,
-            desc=f"Grouping texts in chunks of {max_seq_length}",
-        )
+        print('this is not implemented')
 
     train_dataset = tokenized_datasets["train"]
 
     if data_args.validation_file is not None:
         eval_dataset = tokenized_datasets["validation"]
     else:
-        logger.info(
+        print(
             f"Validation file not found: using {data_args.validation_split_percentage}% of the dataset as validation"
             " as provided in data_args"
         )
@@ -471,7 +425,7 @@ def main():
 
     # Log a few random samples from the training set:
     for index in random.sample(range(len(train_dataset)), min(3, len(train_dataset))):
-        logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
+        print(f"Sample {index} of the training set: {train_dataset[index]}.")
     # endregion
 
     with training_args.strategy.scope():
@@ -481,7 +435,7 @@ def main():
         elif model_args.model_name_or_path:
             model = TFAutoModelForMaskedLM.from_pretrained(model_args.model_name_or_path, config=config)
         else:
-            logger.info("Training new model from scratch")
+            print("Training new model from scratch")
             model = TFAutoModelForMaskedLM.from_config(config)
 
         # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
@@ -508,36 +462,36 @@ def main():
         # https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.TFPreTrainedModel.prepare_tf_dataset
         # https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.Dataset.to_tf_dataset
 
-#         tf_train_dataset = model.prepare_tf_dataset(
-#             train_dataset,
-#             shuffle=True,
-#             batch_size=num_replicas * training_args.per_device_train_batch_size,
-#             collate_fn=data_collator,
-#         ).with_options(options)
+        #         tf_train_dataset = model.prepare_tf_dataset(
+        #             train_dataset,
+        #             shuffle=True,
+        #             batch_size=num_replicas * training_args.per_device_train_batch_size,
+        #             collate_fn=data_collator,
+        #         ).with_options(options)
 
         tf_train_dataset = train_dataset.to_tf_dataset(
-           columns=['input_ids', 'token_type_ids', 'attention_mask'],
-           shuffle=True,
-           batch_size=num_replicas * training_args.per_device_train_batch_size,
-           collate_fn=data_collator,
-            )
+            columns=['input_ids', 'token_type_ids', 'attention_mask'],
+            shuffle=True,
+            batch_size=num_replicas * training_args.per_device_train_batch_size,
+            collate_fn=data_collator,
+        )
 
-#         tf_eval_dataset = model.prepare_tf_dataset(
-#             eval_dataset,
-#             # labels are passed as input, as we will use the model's internal loss
-#             shuffle=False,
-#             batch_size=num_replicas * training_args.per_device_eval_batch_size,
-#             collate_fn=data_collator,
-#             drop_remainder=True,
-#         ).with_options(options)
+        #         tf_eval_dataset = model.prepare_tf_dataset(
+        #             eval_dataset,
+        #             # labels are passed as input, as we will use the model's internal loss
+        #             shuffle=False,
+        #             batch_size=num_replicas * training_args.per_device_eval_batch_size,
+        #             collate_fn=data_collator,
+        #             drop_remainder=True,
+        #         ).with_options(options)
 
         tf_eval_dataset = eval_dataset.to_tf_dataset(
-           columns=['input_ids', 'token_type_ids', 'attention_mask'],
-           shuffle=False,
-           batch_size=num_replicas * training_args.per_device_eval_batch_size,
-           collate_fn=data_collator,
-           drop_remainder=True
-            )
+            columns=['input_ids', 'token_type_ids', 'attention_mask'],
+            shuffle=False,
+            batch_size=num_replicas * training_args.per_device_eval_batch_size,
+            collate_fn=data_collator,
+            drop_remainder=True
+        )
         # endregion
 
         # region Optimizer and loss
@@ -558,45 +512,12 @@ def main():
             adam_beta2=training_args.adam_beta2,
             adam_epsilon=training_args.adam_epsilon,
             weight_decay_rate=training_args.weight_decay,
-#             adam_global_clipnorm=training_args.max_grad_norm,
+            # adam_global_clipnorm=training_args.max_grad_norm,
         )
 
         # no user-specified loss = will use the model internal loss
-#         model.compile(optimizer=optimizer, jit_compile=training_args.xla, run_eagerly=True)
+        # model.compile(optimizer=optimizer, jit_compile=training_args.xla, run_eagerly=True)
         model.compile(optimizer=optimizer, run_eagerly=True)
-        # endregion
-
-        # region Preparing push_to_hub and model card
-        push_to_hub_model_id = training_args.push_to_hub_model_id
-        model_name = model_args.model_name_or_path.split("/")[-1]
-        if not push_to_hub_model_id:
-            if data_args.dataset_name is not None:
-                push_to_hub_model_id = f"{model_name}-finetuned-{data_args.dataset_name}"
-            else:
-                push_to_hub_model_id = f"{model_name}-finetuned-mlm"
-
-        model_card_kwargs = {"finetuned_from": model_args.model_name_or_path, "tasks": "fill-mask"}
-        if data_args.dataset_name is not None:
-            model_card_kwargs["dataset_tags"] = data_args.dataset_name
-            if data_args.dataset_config_name is not None:
-                model_card_kwargs["dataset_args"] = data_args.dataset_config_name
-                model_card_kwargs["dataset"] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
-            else:
-                model_card_kwargs["dataset"] = data_args.dataset_name
-
-        if training_args.push_to_hub:
-            callbacks = [
-                PushToHubCallback(
-                    output_dir=training_args.output_dir,
-                    model_id=push_to_hub_model_id,
-                    organization=training_args.push_to_hub_organization,
-                    token=training_args.push_to_hub_token,
-                    tokenizer=tokenizer,
-                    **model_card_kwargs,
-                )
-            ]
-        else:
-            callbacks = []
         # endregion
 
         # region Training and validation
@@ -606,15 +527,10 @@ def main():
         print(f"  Instantaneous batch size per device = {training_args.per_device_train_batch_size}")
         print(f"  Total train batch size = {training_args.per_device_train_batch_size * num_replicas}")
 
-        # For long training runs, you may wish to use the PushToHub() callback here to save intermediate checkpoints
-        # to the Hugging Face Hub rather than just pushing the finished model.
-        # See https://huggingface.co/docs/transformers/main_classes/keras_callbacks#transformers.PushToHubCallback
-
         history = model.fit(
             tf_train_dataset,
             validation_data=tf_eval_dataset,
             epochs=int(training_args.num_train_epochs),
-            callbacks=callbacks,
         )
         train_loss = history.history["loss"][-1]
         try:
@@ -624,22 +540,13 @@ def main():
         print(f"  Final train loss: {train_loss:.3f}")
         print(f"  Final train perplexity: {train_perplexity:.3f}")
 
-#     print(history.history)
-#     validation_loss = history.history["val_loss"][-1]
-#     try:
-#         validation_perplexity = math.exp(validation_loss)
-#     except OverflowError:
-#         validation_perplexity = math.inf
-#     logger.info(f"  Final validation loss: {validation_loss:.3f}")
-#     logger.info(f"  Final validation perplexity: {validation_perplexity:.3f}")
-
     if training_args.output_dir is not None:
         output_eval_file = os.path.join(training_args.output_dir, "all_results.json")
         results_dict = dict()
         results_dict["train_loss"] = train_loss
         results_dict["train_perplexity"] = train_perplexity
-#         results_dict["eval_loss"] = validation_loss
-#         results_dict["eval_perplexity"] = validation_perplexity
+        #         results_dict["eval_loss"] = validation_loss
+        #         results_dict["eval_perplexity"] = validation_perplexity
         with open(output_eval_file, "w") as writer:
             writer.write(json.dumps(results_dict))
         # endregion
@@ -649,6 +556,7 @@ def main():
         model.save_pretrained(training_args.output_dir)
 
     print("Done")
+
 
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
