@@ -5,7 +5,7 @@ Daniele Grandi
 Fabian Riquelme
 
 ## Repository Structure
-```
+<pre>
 .
 ├─ data                               # Data folder and preprocessing code
 │  ├─ extract_text_data.py            # Takes the raw ABC data and extracts the `assembly names` and `part names`
@@ -14,9 +14,9 @@ Fabian Riquelme
 |
 ├─ assembly_name_prediction           
 │  ├─ assembly_name_prediction.ipnyb  # Notebook containing all relevant experiments for the assembly name prediction task
-│  └─ fine_tuning                     # Code to perform language modeling pre-training using MLM method, copied from the [Huggingface repo](https://github.com/huggingface/transformers/tree/main/examples/tensorflow/language-modeling) 
+│  └─ fine_tuning                     # Code to perform language modeling pre-training using MLM method, copied from the <a href="https://github.com/huggingface/transformers/tree/main/examples/tensorflow/language-modeling">Huggingface repo</a> 
 │ 
 ├─ entailment           
 │  ├─ entailment.ipnyb                # Notebook containing all relevant experiments for the entailment task
 
-```
+</pre>
