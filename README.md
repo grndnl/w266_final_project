@@ -1,5 +1,7 @@
 # w266 Final Project
+
 Daniele Grandi
+
 Fabian Riquelme
 
 ## Repository Structure
