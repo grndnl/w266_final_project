@@ -12,7 +12,7 @@ Fabian Riquelme
 |
 ├─ assembly_name_prediction           
 │  ├─ assembly_name_prediction.ipnyb  # Notebook containing all relevant experiments for the assembly name prediction task
-│  └─ fine_tuning                     # Code to perform language modeling pre-training using MLM method, copied from the (Huggingface repo)[https://github.com/huggingface/transformers/tree/main/examples/tensorflow/language-modeling] 
+│  └─ fine_tuning                     # Code to perform language modeling pre-training using MLM method, copied from the [Huggingface repo](https://github.com/huggingface/transformers/tree/main/examples/tensorflow/language-modeling) 
 │ 
 ├─ entailment           
 │  ├─ entailment.ipnyb                # Notebook containing all relevant experiments for the entailment task
