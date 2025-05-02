@@ -1,8 +1,9 @@
-# w266 Final Project
+# On the effectiveness of Large Language Models in the mechanical design domain
 
-Daniele Grandi
+Daniele Grandi, Fabian Riquelme
 
-Fabian Riquelme
+In this work, we seek to understand the performance of large language models in the mechanical engineering domain. We leverage the semantic data found in the ABC dataset, specifically the assembly names that designers assigned to the overall assemblies, and the individual semantic part names that were assigned to each part. After pre-processing the data we developed two unsupervised tasks to evaluate how different model architectures perform on domain-specific data: a binary sentence-pair classification task and a zero-shot classification task.  We achieved a 0.62 accuracy for the binary sentence-pair classification task with a fine-tuned model that focuses on fighting over-fitting: 1) modifying learning rates, 2) dropout values, 3) Sequence Length, and 4) adding a multi-head attention layer. Our model on the zero-shot classification task outperforms the baselines by a wide margin, and achieves a top-1 classification accuracy of 0.386. 
+The results shed some light on the specific failure modes that arise when learning from language in this domain.
 
 ## Repository Structure
 <pre>
